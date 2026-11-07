@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uninformed Search Lab | Five AI Search Strategies</title>
+<style>
+:root{--bg:#071426;--panel:#10233d;--panel2:#142b49;--text:#eef5ff;--muted:#a9bbd2;--cyan:#48d7e8;--green:#36d399;--yellow:#ffd166;--red:#ff7185;--line:#52718f}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0%,#17365a 0,#071426 42%);color:var(--text);font:15px/1.5 Inter,Segoe UI,Arial,sans-serif}
+header{padding:28px 5vw 20px;border-bottom:1px solid #29435f;background:#091a2e}
+.eyebrow{color:var(--cyan);font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+h1{font-size:clamp(26px,4vw,42px);line-height:1.1;margin:8px 0}header p{color:var(--muted);max-width:800px;margin:10px 0 0}
+main{max-width:1250px;margin:auto;padding:24px 20px 45px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+select,button{border:1px solid #355371;border-radius:10px;padding:10px 14px;background:#132b47;color:var(--text);font:inherit}
+button{cursor:pointer;font-weight:700}button.primary{background:var(--cyan);color:#05202a;border-color:var(--cyan)}button:hover{filter:brightness(1.12)}button:disabled{opacity:.4;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px}
+.panel{background:linear-gradient(145deg,#10243d,#0c1d33);border:1px solid #29435f;border-radius:16px;padding:16px;box-shadow:0 14px 35px #0003}
+.panel h2{font-size:17px;margin:0 0 10px}.sub{color:var(--muted);font-size:13px}
+.graph-wrap{background:#f6f9fc;border-radius:12px;padding:8px;overflow:hidden}
+svg{width:100%;height:auto;display:block;min-height:280px}
+.edge{stroke:#60758a;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.edge.active{stroke:#0c9eb0;stroke-width:4}.edge-label{fill:#20364c;font-size:15px;font-weight:700}
+.node circle{fill:#eaf2fb;stroke:#50718e;stroke-width:2.5}.node text{fill:#17324b;font-size:17px;font-weight:800;text-anchor:middle;dominant-baseline:middle}
+.node.visited circle{fill:#baf3dc;stroke:#0a9d70;stroke-width:3}.node.current circle{fill:#ffe08a;stroke:#d18b00;stroke-width:4}.node.frontier circle{fill:#b9eff5;stroke:#0797a8;stroke-width:3}.node.goal circle{fill:#d7c6ff;stroke:#8056c9;stroke-width:3}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:#29435a;font-size:12px;padding:8px 4px 2px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{background:#0a1b30;border:1px solid #29435f;border-radius:10px;padding:10px}.stat b{display:block;color:var(--cyan);font-size:19px}.stat span{color:var(--muted);font-size:11px}
+.info{color:var(--muted);min-height:65px}.info strong{color:var(--text)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}.pill{padding:5px 9px;border-radius:20px;background:#173652;border:1px solid #355777;font-size:12px}.pill.done{background:#124333;border-color:#168b65}.pill.next{background:#57451b;border-color:#9b7925}
+.detail{display:grid;grid-template-columns:1fr 1fr;gap:10px}.detailbox{background:#0a1b30;border-radius:10px;padding:10px;min-height:86px}.detailbox h3{font-size:12px;color:var(--muted);margin:0 0 6px;text-transform:uppercase;letter-spacing:1px}.detailbox p{margin:0;overflow-wrap:anywhere}
+.table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}.table td,.table th{border-bottom:1px solid #29435f;padding:7px;text-align:left}.table th{color:var(--muted)}
+.note{margin-top:16px;padding:13px;border-left:3px solid var(--yellow);background:#2b281c;border-radius:8px;color:#f7e8bb;font-size:13px}
+footer{text-align:center;color:#7890aa;font-size:12px;padding:18px}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}@media(max-width:480px){main{padding:16px 12px}.detail{grid-template-columns:1fr}.toolbar>*{flex:1}}
+</style>
+</head>
+<body>
+<header><div class="eyebrow">Interactive Artificial Intelligence Learning Lab</div><h1>Uninformed Search Strategies</h1><p>Explore five classic search algorithms on one weighted, directed graph. Step through the frontier, see which node is expanded, and compare the route to the goal.</p></header>
+<main>
+<div class="toolbar">
+<label for="algorithm"><strong>Choose algorithm:</strong></label>
+<select id="algorithm">
+<option value="BFS">Breadth-First Search (BFS)</option>
+<option value="DFS">Depth-First Search (DFS)</option>
+<option value="UCS">Uniform-Cost Search (UCS)</option>
+<option value="DLS">Depth-Limited Search (DLS)</option>
+<option value="IDDFS">Iterative Deepening DFS (IDDFS)</option>
+</select>
+<button class="primary" id="step">Next step →</button><button id="play">▶ Play</button><button id="reset">↺ Reset</button>
+</div>
+<div class="layout">
+<section class="panel">
+<h2>Search graph <span class="sub">— start: S · goal: G</span></h2>
+<div class="graph-wrap">
+<svg viewBox="0 0 720 430" role="img" aria-label="Directed weighted search graph">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#60758a"/></marker></defs>
+<!-- edges -->
+<path class="edge" id="e-SA" d="M350 75 L205 155"/><text class="edge-label" x="266" y="104">2</text>
+<path class="edge" id="e-SB" d="M370 75 L515 155"/><text class="edge-label" x="458" y="104">4</text>
+<path class="edge" id="e-AC" d="M190 185 L130 275"/><text class="edge-label" x="145" y="224">2</text>
+<path class="edge" id="e-AD" d="M210 185 L285 275"/><text class="edge-label" x="250" y="225">5</text>
+<path class="edge" id="e-BE" d="M510 185 L435 275"/><text class="edge-label" x="460" y="224">1</text>
+<path class="edge" id="e-BF" d="M530 185 L590 275"/><text class="edge-label" x="565" y="224">3</text>
+<path class="edge" id="e-CG" d="M130 305 L320 365"/><text class="edge-label" x="215" y="326">5</text>
+<path class="edge" id="e-DG" d="M300 305 L350 365"/><text class="edge-label" x="318" y="330">2</text>
+<path class="edge" id="e-EG" d="M435 305 L385 365"/><text class="edge-label" x="413" y="330">6</text>
+<path class="edge" id="e-FG" d="M590 305 L410 365"/><text class="edge-label" x="505" y="326">2</text>
+<g class="node" id="n-S"><circle cx="360" cy="55" r="27"/><text x="360" y="55">S</text></g>
+<g class="node" id="n-A"><circle cx="190" cy="165" r="27"/><text x="190" y="165">A</text></g>
+<g class="node" id="n-B"><circle cx="530" cy="165" r="27"/><text x="530" y="165">B</text></g>
+<g class="node" id="n-C"><circle cx="120" cy="290" r="27"/><text x="120" y="290">C</text></g>
+<g class="node" id="n-D"><circle cx="300" cy="290" r="27"/><text x="300" y="290">D</text></g>
+<g class="node" id="n-E"><circle cx="430" cy="290" r="27"/><text x="430" y="290">E</text></g>
+<g class="node" id="n-F"><circle cx="600" cy="290" r="27"/><text x="600" y="290">F</text></g>
+<g class="node goal" id="n-G"><circle cx="365" cy="380" r="27"/><text x="365" y="380">G</text></g>
+</svg>
+<div class="legend"><span><i class="dot" style="background:#eaf2fb"></i>Unvisited</span><span><i class="dot" style="background:#b9eff5"></i>Frontier</span><span><i class="dot" style="background:#baf3dc"></i>Visited</span><span><i class="dot" style="background:#ffe08a"></i>Current</span><span><i class="dot" style="background:#d7c6ff"></i>Goal</span></div>
+</div>
+<div class="stats"><div class="stat"><b id="expanded">0</b><span>Nodes expanded</span></div><div class="stat"><b id="depth">—</b><span>Current depth</span></div><div class="stat"><b id="cost">—</b><span>Goal path cost</span></div></div>
+</section>
+<aside class="panel">
+<h2 id="algoTitle">Breadth-First Search (BFS)</h2><p class="info" id="explanation">BFS explores the graph level by level. It uses a FIFO queue.</p>
+<div class="detail">
+<div class="detailbox"><h3>Frontier / next to explore</h3><p id="frontier">S</p></div>
+<div class="detailbox"><h3>Visited order</h3><p id="visited">—</p></div>
+<div class="detailbox"><h3>Data structure</h3><p id="structure">Queue (FIFO)</p></div>
+<div class="detailbox"><h3>Current action</h3><p id="action">Ready to start.</p></div>
+</div>
+<h2 style="margin-top:18px">Algorithm properties</h2>
+<table class="table"><tbody id="properties"></tbody></table>
+<div class="note" id="teachingNote">BFS finds the shallowest goal. It is optimal when every step has the same cost.</div>
+</aside>
+</div>
+<div class="panel" style="margin-top:16px"><h2>How to read this simulation</h2><p class="sub">The arrows show allowed directions; numbers on arrows are edge costs. Depth means number of edges from S, while path cost means the sum of edge weights. These are different measurements.</p><div class="pills" id="path"></div><p class="sub" id="status">Select an algorithm and press Next step to begin.</p></div>
+</main>
+<footer>Uninformed Search Lab · Educational simulation · Same graph used for fair comparison</footer>
+<script>
+const graph={S:[['A',2],['B',4]],A:[['C',2],['D',5]],B:[['E',1],['F',3]],C:[['G',5]],D:[['G',2]],E:[['G',6]],F:[['G',2]],G:[]};
+const positions=['S','A','B','C','D','E','F','G'];
+const descriptions={
+BFS:['Breadth-First Search (BFS)','Explores the shallowest unexpanded nodes first. New nodes go to the back of a FIFO queue.','Queue (FIFO)','Complete: Yes (finite branching) · Optimal: Yes, if step costs are equal','BFS finds a goal with the fewest edges, not necessarily the lowest weighted cost.'],
+DFS:['Depth-First Search (DFS)','Follows one branch as deeply as possible, then backtracks. A stack gives LIFO behavior.','Stack (LIFO)','Complete: No (in infinite-depth spaces) · Optimal: No','This graph has a finite search space, so DFS can find the goal. Its answer depends on child order.'],
+UCS:['Uniform-Cost Search (UCS)','Expands the frontier node with the smallest cumulative path cost g(n).','Priority Queue (lowest cost first)','Complete: Yes (positive step costs) · Optimal: Yes','UCS compares total path costs, not the number of edges or depth.'],
+DLS:['Depth-Limited Search (DLS)','Works like DFS, but refuses to explore beyond the chosen depth limit (2 here).','Stack (LIFO)','Complete: No · Optimal: No','The goal is at depth 3, so a depth limit of 2 produces a cutoff rather than finding G.'],
+IDDFS:['Iterative Deepening DFS (IDDFS)','Repeats depth-limited DFS with limits 0, 1, 2, then 3 until the goal is found.','Repeated depth-limited DFS','Complete: Yes (finite branching) · Optimal: Yes, if step costs are equal','IDDFS uses little memory like DFS while finding the shallowest goal like BFS.']
+};
+let mode='BFS',steps=[],idx=0,timer=null;
+function makeSteps(m){
+ const out=[]; let visited=[],frontier=[],current=null,action='',depth=null,cost=null,path=null,limit=null,round=null;
+ const push=(a)=>out.push({visited:[...visited],frontier:[...frontier],current,action:a,depth,cost,path,limit,round,done:false});
+ if(m==='BFS'||m==='DFS'||m==='DLS'){
+  const stack=[{n:'S',d:0,c:0,p:['S']}]; const seen=new Set();
+  limit=m==='DLS'?2:Infinity;
+  while(stack.length){
+   const item=stack.pop(); if(seen.has(item.n))continue; seen.add(item.n);current=item.n;depth=item.d;cost=item.c;
+   if(item.n==='G'){visited.push('G');path=item.p;push('Goal found!');break;}
+   visited.push(item.n);push(m==='BFS'?'Expand '+item.n+' and inspect its children.':'Expand '+item.n+'.');
+   let children=graph[item.n].map(([n,w])=>({n,d:item.d+1,c:item.c+w,p:[...item.p,n]}));
+   if(m==='DLS'&&item.d>=limit){if(children.length){push('Depth limit reached at '+item.n+'; do not expand deeper nodes.');out[out.length-1].frontier=stack.slice();}continue;}
+   if(m==='BFS'){frontier.push(...children); // queue represented from front to back
+    // BFS uses shift; handled by using separate queue below
+   } else {for(let i=children.length-1;i>=0;i--)if(!seen.has(children[i].n))stack.push(children[i]);out[out.length-1].frontier=stack.slice();}
+   if(m==='BFS'){/* replace loop mechanics below */}
+   if(m==='BFS')break;
+  }
+  if(m==='BFS'){
+   visited=[];frontier=[{n:'S',d:0,c:0,p:['S']}];let seenB=new Set();
+   while(frontier.length){let x=frontier.shift();if(seenB.has(x.n))continue;seenB.add(x.n);current=x.n;depth=x.d;cost=x.c;
+    if(x.n==='G'){visited.push('G');path=x.p;push('Goal found!');break;}
+    visited.push(x.n);push('Expand '+x.n+'; add its children to the back of the queue.');
+    graph[x.n].forEach(([n,w])=>{if(!seenB.has(n))frontier.push({n,d:x.d+1,c:x.c+w,p:[...x.p,n]});});
+   }
+  }
+ } else if(m==='UCS'){
+  frontier=[{n:'S',d:0,c:0,p:['S']}];let best={S:0},closed=new Set();
+  while(frontier.length){frontier.sort((a,b)=>a.c-b.c);let x=frontier.shift();if(closed.has(x.n))continue;closed.add(x.n);current=x.n;depth=x.d;cost=x.c;
+   if(x.n==='G'){visited.push('G');path=x.p;push('Goal found: lowest-cost path.');break;}
+   visited.push(x.n);push('Expand '+x.n+' because it has the lowest path cost in the frontier.');
+   graph[x.n].forEach(([n,w])=>{let nc=x.c+w;if(!closed.has(n)&& (best[n]===undefined||nc<best[n])){best[n]=nc;frontier.push({n,d:x.d+1,c:nc,p:[...x.p,n]});}});
+  }
+ } else if(m==='IDDFS'){
+  let found=false;
+  for(let lim=0;lim<=3&&!found;lim++){round=lim;limit=lim;current=null;depth=null;cost=null;frontier=[];push('Start a new depth-limited iteration with limit '+lim+'.');
+   const st=[{n:'S',d:0,c:0,p:['S']}];let seen=new Set();
+   while(st.length){let x=st.pop();if(seen.has(x.n))continue;seen.add(x.n);current=x.n;depth=x.d;cost=x.c;
+    if(x.n==='G'){visited.push('G');path=x.p;push('Goal found at depth limit '+lim+'.');found=true;break;}
+    visited.push(x.n);push('Explore '+x.n+' within depth limit '+lim+'.');
+    if(x.d<lim){let ch=graph[x.n].map(([n,w])=>({n,d:x.d+1,c:x.c+w,p:[...x.p,n]}));for(let i=ch.length-1;i>=0;i--)if(!seen.has(ch[i].n))st.push(ch[i]);out[out.length-1].frontier=st.slice();}
+    else if(graph[x.n].length){push('Depth boundary at '+x.n+'.');out[out.length-1].frontier=st.slice();}
+   }
+   if(!found)push('Iteration '+lim+' finished; increase the limit.');
+  }
+ }
+ if(!out.length||!out[out.length-1].path)out.push({visited,frontier:[],current,action:'Search ended.',depth,cost,path,done:true});
+ out[out.length-1].done=true;return out;
+}
+function render(){
+ const s=steps[Math.min(idx,steps.length-1)];if(!s)return;
+ document.getElementById('expanded').textContent=s.visited.length;
+ document.getElementById('depth').textContent=s.depth===null?'—':s.depth;
+ document.getElementById('cost').textContent=s.path?s.cost:'—';
+ document.getElementById('frontier').textContent=s.frontier.length?s.frontier.map(x=>typeof x==='string'?x:x.n+(mode==='UCS'?' ('+x.c+')':'')).join(' → '):'Empty';
+ document.getElementById('visited').textContent=s.visited.join(' → ')||'—';
+ document.getElementById('action').textContent=s.action;
+ document.getElementById('status').textContent=(s.round!==null&&s.round!==undefined?'IDDFS depth limit: '+s.round+' · ':'')+'Step '+(idx+1)+' of '+steps.length+(s.done?' · Search complete.':'');
+ document.querySelectorAll('.node').forEach(el=>{el.classList.remove('visited','current','frontier');let n=el.id.slice(2);if(s.visited.includes(n))el.classList.add('visited');if(s.frontier.some(x=>(typeof x==='string'?x:x.n)===n))el.classList.add('frontier');if(s.current===n)el.classList.add('current');});
+ document.querySelectorAll('.edge').forEach(e=>e.classList.remove('active'));
+ if(s.path){for(let i=0;i<s.path.length-1;i++){let id='e-'+s.path[i]+s.path[i+1];document.getElementById(id)?.classList.add('active');}}
+ const path=document.getElementById('path');path.innerHTML='';if(s.path){s.path.forEach((n,i)=>{let el=document.createElement('span');el.className='pill done';el.textContent=n;path.appendChild(el);if(i<s.path.length-1){let a=document.createElement('span');a.className='sub';a.textContent='→';path.appendChild(a);}});let c=document.createElement('span');c.className='pill next';c.textContent='Total cost = '+s.cost;path.appendChild(c);}else{let p=document.createElement('span');p.className='pill';p.textContent='Goal path will appear when found';path.appendChild(p);}
+ document.getElementById('step').disabled=idx>=steps.length-1;
+}
+function setup(){if(timer){clearInterval(timer);timer=null;}mode=document.getElementById('algorithm').value;steps=makeSteps(mode);idx=0;let d=descriptions[mode];document.getElementById('algoTitle').textContent=d[0];document.getElementById('explanation').textContent=d[1];document.getElementById('structure').textContent=d[2];document.getElementById('teachingNote').textContent=d[4];document.getElementById('properties').innerHTML='<tr><th>Property</th><th>Result</th></tr><tr><td>Completeness / Optimality</td><td>'+d[3]+'</td></tr><tr><td>Goal</td><td>G</td></tr><tr><td>DLS limit</td><td>'+(mode==='DLS'?'2':'Not fixed')+'</td></tr>';render();}
+document.getElementById('algorithm').addEventListener('change',setup);
+document.getElementById('step').addEventListener('click',()=>{if(idx<steps.length-1){idx++;render();}});
+document.getElementById('reset').addEventListener('click',setup);
+document.getElementById('play').addEventListener('click',()=>{if(timer){clearInterval(timer);timer=null;document.getElementById('play').textContent='▶ Play';return;}if(idx>=steps.length-1)idx=0;document.getElementById('play').textContent='Ⅱ Pause';timer=setInterval(()=>{if(idx<steps.length-1){idx++;render();}else{clearInterval(timer);timer=null;document.getElementById('play').textContent='▶ Play';}},1250);render();});
+setup();
+</script>
+</body></html>
